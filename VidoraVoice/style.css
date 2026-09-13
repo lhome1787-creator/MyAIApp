@@ -1,0 +1,78 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0b1020;
+    color: white;
+}
+
+.app {
+    width: 90%;
+    max-width: 700px;
+    margin: 60px auto;
+    text-align: center;
+}
+
+h1 {
+    font-size: 38px;
+}
+
+.subtitle {
+    color: #aab3d0;
+    font-size: 18px;
+}
+
+.voice-box {
+    margin: 50px 0;
+}
+
+.mic-button {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    border: none;
+    font-size: 55px;
+    cursor: pointer;
+    background: #6c5ce7;
+    box-shadow: 0 0 35px #6c5ce7;
+}
+
+#status {
+    margin-top: 25px;
+    color: #b8c0d9;
+}
+
+.text-box {
+    display: flex;
+    gap: 10px;
+}
+
+.text-box input {
+    flex: 1;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #333b5c;
+    background: #151b30;
+    color: white;
+    font-size: 16px;
+}
+
+.text-box button {
+    width: 55px;
+    border: none;
+    border-radius: 12px;
+    background: #6c5ce7;
+    color: white;
+    font-size: 22px;
+}
+
+.response {
+    margin-top: 25px;
+    padding: 20px;
+    border-radius: 15px;
+    background: #151b30;
+    color: #dce2f5;
+}

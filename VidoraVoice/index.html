@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Vidora Voice AI</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <h1>🎤 Vidora Voice AI</h1>
+
+        <p class="subtitle">
+            बोलिए, Vidora AI आपकी बात सुनेगा
+        </p>
+
+        <div class="voice-box">
+
+            <div class="image-box">
+
+    <button onclick="openImagePicker()">
+        🖼️ Photo चुनें
+    </button>
+
+    <input
+        type="file"
+        id="imageInput"
+        accept="image/*"
+        style="display:none"
+        onchange="handleImage(event)"
+    >
+
+</div>
+
+            <button id="micButton" class="mic-button">
+                🎤
+            </button>
+
+            <p id="status">
+                Mic दबाकर बोलना शुरू करें
+            </p>
+
+        </div>
+
+        <div class="text-box">
+
+            <input
+                type="text"
+                id="userText"
+                placeholder="या यहाँ अपना सवाल लिखें..."
+            >
+
+            <button id="sendButton">
+                ➤
+            </button>
+
+        </div>
+
+        <div id="response" class="response">
+            Vidora AI का जवाब यहाँ दिखाई देगा।
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
