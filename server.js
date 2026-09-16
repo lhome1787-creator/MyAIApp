@@ -4,6 +4,8 @@ const express = require("express");
 const cors = require("cors");
 const OpenAI = require("openai");
 const { PDFParse } = require("pdf-parse");
+const Parser = require("rss-parser");
+const newsParser = new Parser();
 
 const app = express();
 
@@ -14,10 +16,26 @@ const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
+const openrouterClient = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY
+});
+
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
+async function getLatestNews(query = "India") {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=hi&gl=IN&ceid=IN:hi`;
+
+    const feed = await newsParser.parseURL(url);
+
+    return feed.items.slice(0, 5).map(item => ({
+        title: item.title,
+        link: item.link,
+        date: item.pubDate
+    }));
+}
 
 // PDF TEXT को छोटे हिस्सों में बाँटना
 function splitText(text, size = 3000) {
@@ -31,6 +49,34 @@ function splitText(text, size = 3000) {
     return chunks;
 }
 
+function isAdvancedQuestion(message) {
+    const keywords = [
+        "latest", "current", "news",
+        "code", "programming",
+        "complex", "advanced",
+        "research", "analysis"
+    ];
+
+    return keywords.some(word =>
+        message.toLowerCase().includes(word)
+    );
+}
+function isAdvancedQuestion(message) {
+    const keywords = [
+        "latest",
+        "current",
+        "today",
+        "news",
+        "2026",
+        "research",
+        "advanced",
+        "latest news"
+    ];
+
+    return keywords.some(keyword =>
+        message.toLowerCase().includes(keyword)
+    );
+}
 
 app.post("/chat", async (req, res) => {
 
@@ -39,7 +85,28 @@ app.post("/chat", async (req, res) => {
     const fileData = req.body.fileData || null;
     const fileName = req.body.fileName || null;
 
+    const advanced = isAdvancedQuestion(message);
+    const wantsNews = /news|खबर|समाचार|latest|ताजा|आज की खबर|current affairs/i.test(message);
+
     try {
+
+        if (wantsNews) {
+    const news = await getLatestNews(message);
+
+    if (!news.length) {
+        return res.json({
+            reply: "अभी कोई ताजा खबर नहीं मिली।"
+        });
+    }
+
+    const reply = news.map((item, index) =>
+        `${index + 1}. ${item.title}\n🕐 ${item.date || ""}\n🔗 ${item.link}`
+    ).join("\n\n");
+
+    return res.json({
+        reply: "📰 आज की ताजा खबरें:\n\n" + reply
+    });
+}
 
         // =========================
         // PDF
@@ -181,21 +248,71 @@ ${combinedSummary}
                 }
             ];
 
-            const response = await client.responses.create({
-                model: "gpt-5.6-luna",
-                input: input
-            });
+            const base64Image = image.replace(/^data:image\/\w+;base64,/, "");
 
-            return res.json({
-                reply: response.output_text
-            });
+const ollamaVision = await fetch("http://localhost:11434/api/chat", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        model: "qwen2.5vl:3b",
+        messages: [{
+            role: "user",
+           content: `फोटो को ध्यान से समझें और हमेशा हिंदी में सरल और स्पष्ट उत्तर दें।
+
+User: ${message || "इस फोटो को समझाकर उत्तर दें।"}`,
+            images: [base64Image]
+        }],
+        stream: false
+    })
+});
+
+const visionData = await ollamaVision.json();
+
+return res.json({
+    reply: visionData.message.content
+});
         }
 
 
         // =========================
         // NORMAL CHAT
         // =========================
+try {
 
+    if (advanced) {
+    throw new Error("ADVANCED_QUESTION");
+}
+    const openrouterResponse = await openrouterClient.chat.completions.create({
+    model: "meta-llama/llama-3.2-3b-instruct:free",
+    messages: [
+        {
+            role: "user",
+            content: `हमेशा हिंदी में उत्तर दें। सरल और स्पष्ट भाषा में जवाब दें।
+
+User: ${message}`
+        }
+    ]
+});
+
+return res.json({
+    reply: openrouterResponse.choices[0].message.content
+});
+
+    if (!ollamaResponse.ok) {
+        throw new Error("Ollama error");
+    }
+
+    const ollamaData = await ollamaResponse.json();
+
+    return res.json({
+        reply: ollamaData.message.content
+    });
+
+} catch (ollamaError) {
+    console.log("Ollama unavailable, switching to Cloud AI...");
+}
         const response = await client.responses.create({
     model: "gpt-5.6-luna",
     instructions: "You are Vidora AI, an AI assistant created for study, exams, learning and general help. Your name is Vidora AI. Never say that you are ChatGPT. If asked your name, say: 'मैं Vidora AI हूँ।'",
@@ -227,3 +344,4 @@ app.listen(PORT, "0.0.0.0", () => {
     );
 
 });
+
