@@ -296,6 +296,8 @@ User: ${message}`
     ]
 });
 
+console.log("✅ OpenRouter Llama response received");
+
 return res.json({
     reply: openrouterResponse.choices[0].message.content
 });
