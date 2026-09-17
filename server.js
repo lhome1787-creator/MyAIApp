@@ -249,7 +249,7 @@ ${combinedSummary}
             ];
 
             const visionResponse = await openrouterClient.chat.completions.create({
-    model: "qwen/qwen2.5-vl-3b-instruct:free",
+    model: "openrouter/free",
     messages: [
         {
             role: "user",
