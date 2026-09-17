@@ -727,6 +727,23 @@ async function sendMagicLink() {
             "✅ आपके Email पर Login Link भेज दिया गया है।";
     }
 }
+
+// Login check
+async function checkLogin() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+
+    if (session) {
+        document.getElementById("loginBox").style.display = "none";
+    }
+}
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (session) {
+        document.getElementById("loginBox").style.display = "none";
+    }
+});
+
+checkLogin();
 </script>
 
 </html>
