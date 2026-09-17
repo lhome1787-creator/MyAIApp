@@ -285,7 +285,7 @@ try {
     throw new Error("ADVANCED_QUESTION");
 }
     const openrouterResponse = await openrouterClient.chat.completions.create({
-    model: "meta-llama/llama-3.2-3b-instruct:free",
+    model: "openrouter/free",
     messages: [
         {
             role: "user",
