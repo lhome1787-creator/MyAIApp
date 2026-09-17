@@ -313,7 +313,7 @@ return res.json({
     });
 
 } catch (ollamaError) {
-    console.log("Ollama unavailable, switching to Cloud AI...");
+    console.log("Cloud AI error:", ollamaError.message);
 }
         const response = await client.responses.create({
     model: "gpt-5.6-luna",
