@@ -89,6 +89,9 @@ header span {
     flex: 1;
     overflow-y: auto;
     padding: 25px;
+
+    display: flex;
+    flex-direction: column;
 }
 
 .welcome {
@@ -163,6 +166,7 @@ header span {
     gap: 7px;
     padding: 12px 20px 18px;
     background: #07111f;
+    margin-top: auto;
 }
 
 .input-area button {
@@ -214,6 +218,45 @@ header span {
 
 }
 
+.sidebar button {
+    width: 100%;
+    padding: 12px 14px;
+    margin: 5px 0;
+    background: transparent;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.sidebar button:hover {
+    background: #202a4a;
+    transform: translateX(4px);
+}
+
+.sidebar button.active {
+    background: #202a4a;
+    border-left: 3px solid #6c8cff;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 70px;
+    }
+
+    .sidebar button {
+        font-size: 0;
+        text-align: center;
+    }
+
+    .main {
+        width: calc(100% - 70px);
+    }
+}
+
 </style>
 
 </head>
@@ -226,14 +269,14 @@ header span {
 
             <h2>🎓 Vidora AI</h2>
 
-            <button>🏠 New Chat</button>
-            <button>📚 BPSC Study</button>
-            <button onclick="openFilePicker()">📄 Upload PDF</button>
-            <button>🖼️ Image Analysis</button>
-            <button>🎙️ Voice Assistant</button>
-            <button>📝 MCQ & Quiz</button>
-            <button>📅 Study Planner</button>
-            <button>⚙️ Settings</button>
+            <button class="active" onclick="newChat()">🏠 New Chat</button>
+            <button onclick="openStudy()">📚 Study</button>
+            <button onclick="setActive(this); openFilePicker()">📄 Upload PDF</button>
+            <button onclick="setActive(this)">🖼️ Image Analysis</button>
+            <button onclick="setActive(this)">🎤 Voice Assistant</button>
+            <button onclick="setActive(this)">📝 MCQ & Quiz</button>
+            <button onclick="setActive(this)">📘 Study Planner</button>
+            <button onclick="setActive(this)">⚙️ Settings</button>
 
         </aside>
 
@@ -246,6 +289,10 @@ header span {
 
 
             <div class="chat" id="chatBox">
+
+                <div class="bpsc-section">
+                    <h2>📚 Study</h2>
+<p>पढ़ाई और सभी परीक्षाओं की तैयारी के लिए AI Assistant।</p>
 
                 <div class="welcome">
 
@@ -300,10 +347,12 @@ header span {
 
             </div>
 
+            </div>
+
 
             <div class="input-area">
 
-                <button>📷</button>
+                <button onclick="openImagePicker()">📷</button>
 
                 <button onclick="openFilePicker()">📎</button>
 
@@ -321,7 +370,7 @@ header span {
                     placeholder="Vidora AI से कुछ पूछें..."
                 >
 
-                <button>➤</button>
+                <button onclick="sendMessage()">➤</button>
 
             </div>
 
@@ -372,8 +421,7 @@ async function sendMessage() {
 
     try {
 
-        const response = await fetch(
-            "/chat",
+       const res = await fetch("/chat",
             {
                 method: "POST",
 
@@ -384,12 +432,13 @@ async function sendMessage() {
                 body: JSON.stringify({
                     message: message,
                     fileData: fileData,
-                    fileName: fileName
+                    fileName: fileName,
+                    image: window.selectedImage || null,
                 })
             }
         );
 
-        const data = await response.json();
+        const data = await res.json();
 
         addMessage(data.reply, "ai");
 
@@ -469,7 +518,68 @@ function handleFile(event) {
 
     console.log("PDF चुना गया:", file.name);
 }
+
+function openImagePicker() {
+    const input = document.createElement("input");
+
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = function() {
+            window.selectedImage = reader.result;
+            const preview = document.createElement("img");
+preview.src = reader.result;
+preview.style.maxWidth = "250px";
+preview.style.maxHeight = "200px";
+preview.style.borderRadius = "12px";
+preview.style.margin = "10px";
+
+document.getElementById("chatBox").appendChild(preview);
+        };
+
+        reader.readAsDataURL(file);
+    };
+
+    input.click();
+}
     </script>
+
+<script>
+
+function newChat() {
+    location.reload();
+}
+function setActive(button) {
+    document.querySelectorAll(".sidebar button").forEach(btn => {
+        btn.classList.remove("active");
+    });
+
+    button.classList.add("active");
+}
+
+function openStudy() {
+    document.getElementById("chatBox").innerHTML = `
+        <div class="study-dashboard">
+            <h1>📚 Study</h1>
+            <p>पढ़ाई और सभी परीक्षाओं की तैयारी के लिए Study Center</p>
+
+            <div class="study-cards">
+                <div class="card">📚 BPSC</div>
+                <div class="card">📝 STET</div>
+                <div class="card">🎓 DELED</div>
+                <div class="card">📖 Other Exams</div>
+            </div>
+        </div>
+    `;
+}
+</script>
 
 </body>
 
