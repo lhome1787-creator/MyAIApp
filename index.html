@@ -730,7 +730,8 @@ async function sendMagicLink() {
 
 // Login check
 async function checkLogin() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: { session } } =
+        await supabaseClient.auth.getSession();
 
     if (session) {
         document.getElementById("loginBox").style.display = "none";
