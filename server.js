@@ -302,15 +302,7 @@ return res.json({
     reply: openrouterResponse.choices[0].message.content
 });
 
-    if (!ollamaResponse.ok) {
-        throw new Error("Ollama error");
-    }
-
-    const ollamaData = await ollamaResponse.json();
-
-    return res.json({
-        reply: ollamaData.message.content
-    });
+   
 
 } catch (ollamaError) {
     console.log("Cloud AI error:", ollamaError.message);
