@@ -329,6 +329,8 @@ header span {
 }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
 
 <body>
@@ -675,6 +677,56 @@ function openStudy() {
 }
 </script>
 
+<div id="loginBox" class="login-screen">
+    <div class="login-box">
+        <h1>VIDORA AI</h1>
+        <p>Email से Login करें</p>
+
+        <input
+            type="email"
+            id="loginEmail"
+            placeholder="अपना Email डालें"
+        >
+
+        <button onclick="sendMagicLink()">
+            📧 Login Link भेजें
+        </button>
+
+        <p id="loginMessage"></p>
+    </div>
+</div>
 </body>
+
+<script>
+const supabase = window.supabase.createClient(
+    "https://zhjuvsiwqfsjfibysnkv.supabase.co",
+    "sb_publishable_o_JgkqacFmU7ahIyESaBBA_cR9IsBkp"
+);
+async function sendMagicLink() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const message = document.getElementById("loginMessage");
+
+    if (!email) {
+        message.textContent = "कृपया अपना Email डालें।";
+        return;
+    }
+
+    message.textContent = "📧 Login link भेजा जा रहा है...";
+
+    const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+            emailRedirectTo: "https://vidora-ai-dgi2.onrender.com"
+        }
+    });
+
+    if (error) {
+        message.textContent = "❌ " + error.message;
+    } else {
+        message.textContent =
+            "✅ आपके Email पर Login Link भेज दिया गया है।";
+    }
+}
+</script>
 
 </html>
