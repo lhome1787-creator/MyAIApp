@@ -248,31 +248,33 @@ ${combinedSummary}
                 }
             ];
 
-            const base64Image = image.replace(/^data:image\/\w+;base64,/, "");
-
-const ollamaVision = await fetch("http://localhost:11434/api/chat", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-        model: "qwen2.5vl:3b",
-        messages: [{
+            const visionResponse = await openrouterClient.chat.completions.create({
+    model: "qwen/qwen2.5-vl-3b-instruct:free",
+    messages: [
+        {
             role: "user",
-           content: `फोटो को ध्यान से समझें और हमेशा हिंदी में सरल और स्पष्ट उत्तर दें।
-
-User: ${message || "इस फोटो को समझाकर उत्तर दें।"}`,
-            images: [base64Image]
-        }],
-        stream: false
-    })
+            content: [
+                {
+                    type: "text",
+                    text: message || "इस फोटो को ध्यान से समझाकर हिंदी में उत्तर दें।"
+                },
+                {
+                    type: "image_url",
+                    image_url: {
+                        url: image
+                    }
+                }
+            ]
+        }
+    ]
 });
 
-const visionData = await ollamaVision.json();
+console.log("✅ OpenRouter Qwen Vision response received");
 
 return res.json({
-    reply: visionData.message.content
+    reply: visionResponse.choices[0].message.content
 });
+
         }
 
 
