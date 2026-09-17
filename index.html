@@ -259,9 +259,103 @@ header span {
 
 </style>
 
+<style>
+.login-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #111827, #312e81);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.login-box {
+    width: 90%;
+    max-width: 420px;
+    background: white;
+    padding: 35px 25px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+
+.login-box h1 {
+    margin-bottom: 8px;
+    font-size: 32px;
+    color: #312e81;
+}
+
+.login-box p {
+    color: #666;
+    margin-bottom: 28px;
+}
+
+.google-login-btn,
+.email-login-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 18px;
+}
+
+.google-login-btn {
+    background: #fff;
+    border: 1px solid #ddd;
+}
+
+.email-login-btn {
+    background: #fff;
+    border: 1px solid #ddd;
+}
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #888;
+    font-size: 13px;
+    margin: 5px 0 20px;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #ddd;
+}
+</style>
+
 </head>
 
 <body>
+
+    <!-- Vidora AI Login -->
+<div id="loginScreen" class="login-screen">
+
+    <div class="login-box">
+
+        <h1>VIDORA AI</h1>
+        <p>Welcome to Vidora AI</p>
+
+        <button class="google-login-btn">
+            🔵 Continue with Google
+        </button>
+
+        <div class="login-divider">
+            <span>OR CONTINUE WITH</span>
+        </div>
+
+        <button class="email-login-btn" onclick="showEmailLogin()">
+            ✉️ Continue with Email
+        </button>
+
+    </div>
+
+</div>
 
     <div class="app">
 
