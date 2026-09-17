@@ -698,7 +698,7 @@ function openStudy() {
 </body>
 
 <script>
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
     "https://zhjuvsiwqfsjfibysnkv.supabase.co",
     "sb_publishable_o_JgkqacFmU7ahIyESaBBA_cR9IsBkp"
 );
@@ -713,7 +713,7 @@ async function sendMagicLink() {
 
     message.textContent = "📧 Login link भेजा जा रहा है...";
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabaseClient.auth.signInWithOtp({
         email: email,
         options: {
             emailRedirectTo: "https://vidora-ai-dgi2.onrender.com"
