@@ -753,14 +753,16 @@ async function checkLogin() {
         await supabaseClient.auth.getSession();
 
     if (session) {
-        document.getElementById("loginBox").style.display = "none";
-    }
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("loginBox").style.display = "none";
+}
 }
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session) {
-        document.getElementById("loginBox").style.display = "none";
-    }
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("loginBox").style.display = "none";
+}
 });
 
 checkLogin();
