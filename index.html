@@ -343,9 +343,9 @@ header span {
         <h1>VIDORA AI</h1>
         <p>Welcome to Vidora AI</p>
 
-        <button class="google-login-btn">
-            🔵 Continue with Google
-        </button>
+        <button class="google-login-btn" onclick="loginWithGoogle()">
+    🔵 Continue with Google
+</button>
 
         <div class="login-divider">
             <span>OR CONTINUE WITH</span>
@@ -702,6 +702,20 @@ const supabaseClient = window.supabase.createClient(
     "https://zhjuvsiwqfsjfibysnkv.supabase.co",
     "sb_publishable_o_JgkqacFmU7ahIyESaBBA_cR9IsBkp"
 );
+
+async function loginWithGoogle() {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+            redirectTo: window.location.origin
+        }
+    });
+
+    if (error) {
+        console.error("Google Login Error:", error);
+        alert("Google Login में समस्या हुई: " + error.message);
+    }
+}
 
 function showEmailLogin() {
     document.getElementById("loginScreen").style.display = "none";
