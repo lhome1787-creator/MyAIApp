@@ -769,6 +769,19 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 });
 
 checkLogin();
+
+async function logoutUser() {
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+        console.error("Logout Error:", error);
+        alert("Logout में समस्या हुई: " + error.message);
+        return;
+    }
+
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("loginBox").style.display = "none";
+}
 </script>
 
 </html>
