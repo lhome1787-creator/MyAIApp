@@ -702,6 +702,11 @@ const supabaseClient = window.supabase.createClient(
     "https://zhjuvsiwqfsjfibysnkv.supabase.co",
     "sb_publishable_o_JgkqacFmU7ahIyESaBBA_cR9IsBkp"
 );
+
+function showEmailLogin() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("loginBox").style.display = "block";
+}
 async function sendMagicLink() {
     const email = document.getElementById("loginEmail").value.trim();
     const message = document.getElementById("loginMessage");
