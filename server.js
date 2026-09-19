@@ -124,6 +124,12 @@ app.post("/chat", async (req, res) => {
             p_user_id: user.id
         });
 
+        console.log("DAILY LIMIT:", {
+    userId: user.id,
+    requestNumber,
+    limitError
+});
+
     if (limitError) {
         console.error("Daily limit error:", limitError);
 
