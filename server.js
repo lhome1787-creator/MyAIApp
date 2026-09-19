@@ -1,6 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
+const { createClient } = require("@supabase/supabase-js");
 const cors = require("cors");
 const OpenAI = require("openai");
 const { PDFParse } = require("pdf-parse");
@@ -8,6 +9,18 @@ const Parser = require("rss-parser");
 const newsParser = new Parser();
 
 const app = express();
+
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET_KEY,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+        }
+    }
+);
 
 app.use(cors());
 app.use(express.json({ limit: "30mb" }));
@@ -84,6 +97,46 @@ app.post("/chat", async (req, res) => {
     const image = req.body.image || null;
     const fileData = req.body.fileData || null;
     const fileName = req.body.fileName || null;
+    // 🔐 Verify logged-in user
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7)
+        : null;
+
+    if (!token) {
+        return res.status(401).json({
+            reply: "कृपया पहले Google से Login करें।"
+        });
+    }
+
+    const { data: { user }, error: userError } =
+        await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+        return res.status(401).json({
+            reply: "Login session valid नहीं है। कृपया फिर से Login करें।"
+        });
+    }
+
+    // 🚦 10 AI requests per day per user
+    const { data: requestNumber, error: limitError } =
+        await supabaseAdmin.rpc("consume_daily_request", {
+            p_user_id: user.id
+        });
+
+    if (limitError) {
+        console.error("Daily limit error:", limitError);
+
+        return res.status(500).json({
+            reply: "Daily request limit check में समस्या आई।"
+        });
+    }
+
+    if (requestNumber === 0) {
+        return res.status(429).json({
+            reply: "आज की 10 AI requests पूरी हो गई हैं। कल फिर 10 requests मिलेंगी।"
+        });
+    }
 
     const advanced = isAdvancedQuestion(message);
     const wantsNews = /news|खबर|समाचार|latest|ताजा|आज की खबर|current affairs/i.test(message);

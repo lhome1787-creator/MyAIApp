@@ -524,13 +524,20 @@ async function sendMessage() {
 
     try {
 
-       const res = await fetch("/chat",
-            {
-                method: "POST",
+       const { data: { session } } = await supabaseClient.auth.getSession();
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+if (!session) {
+    alert("कृपया पहले Google से Login करें।");
+    return;
+}
+
+const res = await fetch("/chat", {
+    method: "POST",
+
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + session.access_token
+    },
 
                 body: JSON.stringify({
                     message: message,
