@@ -549,6 +549,10 @@ const res = await fetch("/chat", {
         );
 
         const data = await res.json();
+        // Google Analytics: successful message
+if (typeof gtag === "function") {
+    gtag("event", "message_sent");
+}
 
         addMessage(data.reply, "ai");
 
