@@ -1,0 +1,58 @@
+[
+{
+"question": "नमस्ते",
+"answer": "नमस्ते! मैं Vidora AI हूँ। आपकी क्या मदद कर सकता हूँ?"
+},
+{
+"question": "तुम्हारा नाम क्या है?",
+"answer": "मेरा नाम Vidora AI है।"
+},
+{
+"question": "तुम क्या कर सकते हो?",
+"answer": "मैं सवालों के जवाब देने और जानकारी समझाने के लिए बनाया जा रहा हूँ।"
+},
+{
+"question": "भारत की राजधानी क्या है?",
+"answer": "भारत की राजधानी नई दिल्ली है।"
+},
+{
+"question": "बिहार की राजधानी क्या है?",
+"answer": "बिहार की राजधानी पटना है।"
+},
+{
+"question": "2 + 2 कितना होता है?",
+"answer": "2 + 2 = 4 होता है।"
+},
+{
+"question": "मशीन लर्निंग क्या है?",
+"answer": "मशीन लर्निंग में कंप्यूटर डेटा से पैटर्न सीखता है।"
+},
+{
+"question": "तुम्हें किसने बनाया?",
+"answer": "मुझे Vidora AI प्रोजेक्ट के अंतर्गत विकसित किया जा रहा है।"
+},
+{
+"question": "धन्यवाद",
+"answer": "आपका स्वागत है!"
+},
+{
+"question": "अलविदा",
+"answer": "फिर मिलेंगे! आपका दिन अच्छा रहे।"
+},
+{
+"question": "What is a prime number?",
+"answer": "A prime number is a whole number greater than 1 with exactly two positive factors: 1 and itself."
+},
+{
+"question": "अभाज्य संख्या क्या होती है?",
+"answer": "अभाज्य संख्या 1 से बड़ी ऐसी प्राकृतिक संख्या है जिसके ठीक दो धनात्मक गुणनखंड होते हैं: 1 और वह संख्या स्वयं।"
+},
+{
+"question": "What do living organisms need to survive?",
+"answer": "Living organisms generally need water, nutrients and suitable environmental conditions."
+},
+{
+"question": "जीवों को जीवित रहने के लिए क्या चाहिए?",
+"answer": "जीवों को सामान्यतः पानी, पोषक तत्व और अनुकूल पर्यावरणीय परिस्थितियों की आवश्यकता होती है।"
+}
+]
