@@ -38,6 +38,109 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
+app.post("/local-chat", async (req, res) => {
+    try {
+        const message = req.body?.message;
+
+        if (typeof message !== "string" || !message.trim()) {
+            return res.status(400).json({
+                reply: "कृपया अपना सवाल लिखिए।"
+            });
+        }
+
+        // GitHub repository में मौजूद data.json पढ़ें
+        const fs = require("fs").promises;
+        const filePath = __dirname + "/data.json";
+
+        const fileContent = await fs.readFile(filePath, "utf8");
+        const knowledge = JSON.parse(fileContent);
+
+        if (!Array.isArray(knowledge)) {
+            throw new Error("data.json में सवालों की सूची नहीं है");
+        }
+
+        // सवाल को सामान्य रूप में बदलें
+        function normalize(text) {
+            return String(text)
+                .toLocaleLowerCase()
+                .normalize("NFC")
+                .replace(/[^\p{L}\p{N}\s]/gu, " ")
+                .trim()
+                .replace(/\s+/g, " ");
+        }
+
+        const question = normalize(message);
+
+        // पहले बिल्कुल समान सवाल खोजें
+        const exactMatch = knowledge.find(item =>
+            item &&
+            typeof item.question === "string" &&
+            normalize(item.question) === question
+        );
+
+        if (exactMatch) {
+            return res.json({
+                reply: exactMatch.answer,
+                source: "Vidora AI local knowledge",
+                match: "exact"
+            });
+        }
+
+        // फिर साझा शब्दों के आधार पर मिलते-जुलते सवाल खोजें
+        const questionWords = new Set(question.split(" "));
+        let bestItem = null;
+        let bestScore = 0;
+
+        for (const item of knowledge) {
+            if (
+                !item ||
+                typeof item.question !== "string" ||
+                typeof item.answer !== "string"
+            ) {
+                continue;
+            }
+
+            const savedQuestion = normalize(item.question);
+            const savedWords = new Set(savedQuestion.split(" "));
+
+            const commonWords = [...questionWords].filter(word =>
+                savedWords.has(word)
+            );
+
+            const score = commonWords.length /
+                Math.max(questionWords.size, savedWords.size, 1);
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestItem = item;
+            }
+        }
+
+        if (bestItem && bestScore >= 0.6) {
+            return res.json({
+                reply: bestItem.answer,
+                source: "Vidora AI local knowledge",
+                match: "similar",
+                confidence: Number(bestScore.toFixed(2)),
+                matched_question: bestItem.question
+            });
+        }
+
+        return res.json({
+            reply: "इस सवाल का जवाब अभी मेरे स्थानीय डेटा में नहीं है।",
+            source: "local knowledge",
+            match: "not_found"
+        });
+
+    } catch (error) {
+        console.error("Local Chat error:", error.message);
+
+        return res.status(500).json({
+            reply: "स्थानीय ज्ञान पढ़ने में समस्या आई।"
+        });
+    }
+});
+
 async function getLatestNews(query = "India") {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=hi&gl=IN&ceid=IN:hi`;
 
