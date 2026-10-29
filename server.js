@@ -4,6 +4,8 @@ const express = require("express");
 const { createClient } = require("@supabase/supabase-js");
 const cors = require("cors");
 const OpenAI = require("openai");
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
 const { PDFParse } = require("pdf-parse");
 const Parser = require("rss-parser");
 const newsParser = new Parser();
@@ -23,12 +25,23 @@ const supabaseAdmin = createClient(
 );
 
 app.use(cors());
-app.use(express.json({ limit: "30mb" }));
+app.use(express.json({
+    limit: "30mb",
+    verify: (req, res, buf) => {
+        if (req.originalUrl === "/razorpay-webhook") {
+            req.rawBody = Buffer.from(buf);
+        }
+    }
+}));
 
 const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 const openrouterClient = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: process.env.OPENROUTER_API_KEY
@@ -38,6 +51,87 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
+// Create Razorpay subscription for logged-in user
+app.post("/create-subscription", async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization || "";
+        const token = authHeader.startsWith("Bearer ")
+            ? authHeader.slice(7)
+            : null;
+
+        if (!token) {
+            return res.status(401).json({
+                error: "कृपया पहले Login करें।"
+            });
+        }
+
+        const { data: { user }, error } =
+            await supabaseAdmin.auth.getUser(token);
+
+        if (error || !user) {
+            return res.status(401).json({
+                error: "Login session valid नहीं है।"
+            });
+        }
+
+        const subscription = await razorpay.subscriptions.create({
+            plan_id: process.env.RAZORPAY_PLAN_ID,
+            total_count: 12,
+            quantity: 1,
+            customer_notify: 1,
+            notes: {
+                supabase_user_id: user.id,
+                plan: "Vidora AI Pro"
+            }
+        });
+
+        return res.json({
+            subscriptionId: subscription.id,
+            keyId: process.env.RAZORPAY_KEY_ID
+        });
+    } catch (error) {
+        console.error("Subscription creation error:", error.message);
+        return res.status(500).json({
+            error: "Subscription बनाने में समस्या आई।"
+        });
+    }
+});
+// Verify Razorpay webhook signature
+app.post(
+    "/razorpay-webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+        try {
+            const signature = req.headers["x-razorpay-signature"];
+
+            if (!signature || !process.env.RAZORPAY_WEBHOOK_SECRET) {
+                return res.status(400).send("Missing webhook signature or secret");
+            }
+
+            const expectedSignature = crypto
+                .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+                .update(req.rawBody)
+                .digest("hex");
+
+            const received = Buffer.from(signature, "utf8");
+            const expected = Buffer.from(expectedSignature, "utf8");
+
+            if (
+                received.length !== expected.length ||
+                !crypto.timingSafeEqual(received, expected)
+            ) {
+                return res.status(400).send("Invalid webhook signature");
+            }
+
+            // Signature verified. Do not grant Pro access yet.
+            // We will add verified subscription/payment handling next.
+            return res.status(200).send("Webhook signature verified");
+        } catch (error) {
+            console.error("Razorpay webhook error:", error.message);
+            return res.status(500).send("Webhook processing failed");
+        }
+    }
+);
 async function getLatestNews(query = "India") {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=hi&gl=IN&ceid=IN:hi`;
 
