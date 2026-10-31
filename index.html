@@ -474,6 +474,7 @@ header span {
                 >
 
                 <button onclick="sendMessage()">➤</button>
+                <button onclick="sendLocalMessage()" title="Local Chat">🧠</button>
 
             </div>
 
@@ -564,6 +565,46 @@ if (typeof gtag === "function") {
 
         addMessage(
             "PDF भेजने में समस्या हुई।",
+            "ai"
+        );
+    }
+}
+
+async function sendLocalMessage() {
+    const input = document.getElementById("userInput");
+    const message = input.value.trim();
+
+    if (!message) {
+        alert("कृपया पहले सवाल लिखें।");
+        return;
+    }
+
+    addMessage(message, "user");
+    input.value = "";
+
+    try {
+        const response = await fetch("https://vidora-own-api.onrender.com/chat", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: message })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Local Chat में समस्या आई।");
+        }
+
+        addMessage(
+            data.reply || "अभी जवाब नहीं मिला।",
+            "ai"
+        );
+    } catch (error) {
+        console.error("Local Chat error:", error);
+        addMessage(
+            "Local Chat से जवाब नहीं मिल पाया। कृपया दोबारा कोशिश करें।",
             "ai"
         );
     }
