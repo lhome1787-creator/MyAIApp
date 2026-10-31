@@ -90,7 +90,7 @@ app.post("/create-subscription", async (req, res) => {
             keyId: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
-        console.error("Subscription creation error:", error.message);
+        console.error("Subscription creation error:", error);
         return res.status(500).json({
             error: "Subscription बनाने में समस्या आई।"
         });
