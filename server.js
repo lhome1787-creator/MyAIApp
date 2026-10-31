@@ -4,6 +4,8 @@ const express = require("express");
 const { createClient } = require("@supabase/supabase-js");
 const cors = require("cors");
 const OpenAI = require("openai");
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
 const { PDFParse } = require("pdf-parse");
 const Parser = require("rss-parser");
 const newsParser = new Parser();
@@ -23,12 +25,23 @@ const supabaseAdmin = createClient(
 );
 
 app.use(cors());
-app.use(express.json({ limit: "30mb" }));
+app.use(express.json({
+    limit: "30mb",
+    verify: (req, res, buf) => {
+        if (req.originalUrl === "/razorpay-webhook") {
+            req.rawBody = Buffer.from(buf);
+        }
+    }
+}));
 
 const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 const openrouterClient = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: process.env.OPENROUTER_API_KEY
@@ -38,109 +51,87 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
-app.post("/local-chat", async (req, res) => {
+// Create Razorpay subscription for logged-in user
+app.post("/create-subscription", async (req, res) => {
     try {
-        const message = req.body?.message;
+        const authHeader = req.headers.authorization || "";
+        const token = authHeader.startsWith("Bearer ")
+            ? authHeader.slice(7)
+            : null;
 
-        if (typeof message !== "string" || !message.trim()) {
-            return res.status(400).json({
-                reply: "कृपया अपना सवाल लिखिए।"
+        if (!token) {
+            return res.status(401).json({
+                error: "कृपया पहले Login करें।"
             });
         }
 
-        // GitHub repository में मौजूद data.json पढ़ें
-        const fs = require("fs").promises;
-        const filePath = __dirname + "/data.json";
+        const { data: { user }, error } =
+            await supabaseAdmin.auth.getUser(token);
 
-        const fileContent = await fs.readFile(filePath, "utf8");
-        const knowledge = JSON.parse(fileContent);
-
-        if (!Array.isArray(knowledge)) {
-            throw new Error("data.json में सवालों की सूची नहीं है");
-        }
-
-        // सवाल को सामान्य रूप में बदलें
-        function normalize(text) {
-            return String(text)
-                .toLocaleLowerCase()
-                .normalize("NFC")
-                .replace(/[^\p{L}\p{N}\s]/gu, " ")
-                .trim()
-                .replace(/\s+/g, " ");
-        }
-
-        const question = normalize(message);
-
-        // पहले बिल्कुल समान सवाल खोजें
-        const exactMatch = knowledge.find(item =>
-            item &&
-            typeof item.question === "string" &&
-            normalize(item.question) === question
-        );
-
-        if (exactMatch) {
-            return res.json({
-                reply: exactMatch.answer,
-                source: "Vidora AI local knowledge",
-                match: "exact"
+        if (error || !user) {
+            return res.status(401).json({
+                error: "Login session valid नहीं है।"
             });
         }
 
-        // फिर साझा शब्दों के आधार पर मिलते-जुलते सवाल खोजें
-        const questionWords = new Set(question.split(" "));
-        let bestItem = null;
-        let bestScore = 0;
-
-        for (const item of knowledge) {
-            if (
-                !item ||
-                typeof item.question !== "string" ||
-                typeof item.answer !== "string"
-            ) {
-                continue;
+        const subscription = await razorpay.subscriptions.create({
+            plan_id: process.env.RAZORPAY_PLAN_ID,
+            total_count: 12,
+            quantity: 1,
+            customer_notify: 1,
+            notes: {
+                supabase_user_id: user.id,
+                plan: "Vidora AI Pro"
             }
-
-            const savedQuestion = normalize(item.question);
-            const savedWords = new Set(savedQuestion.split(" "));
-
-            const commonWords = [...questionWords].filter(word =>
-                savedWords.has(word)
-            );
-
-            const score = commonWords.length /
-                Math.max(questionWords.size, savedWords.size, 1);
-
-            if (score > bestScore) {
-                bestScore = score;
-                bestItem = item;
-            }
-        }
-
-        if (bestItem && bestScore >= 0.6) {
-            return res.json({
-                reply: bestItem.answer,
-                source: "Vidora AI local knowledge",
-                match: "similar",
-                confidence: Number(bestScore.toFixed(2)),
-                matched_question: bestItem.question
-            });
-        }
-
-        return res.json({
-            reply: "इस सवाल का जवाब अभी मेरे स्थानीय डेटा में नहीं है।",
-            source: "local knowledge",
-            match: "not_found"
         });
 
+        return res.json({
+            subscriptionId: subscription.id,
+            keyId: process.env.RAZORPAY_KEY_ID
+        });
     } catch (error) {
-        console.error("Local Chat error:", error.message);
-
+        console.error("Subscription creation error:", error.message);
         return res.status(500).json({
-            reply: "स्थानीय ज्ञान पढ़ने में समस्या आई।"
+            error: "Subscription बनाने में समस्या आई।"
         });
     }
 });
+// Verify Razorpay webhook signature
+app.post(
+    "/razorpay-webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+        try {
+            const signature = req.headers["x-razorpay-signature"];
 
+            if (!signature || !process.env.RAZORPAY_WEBHOOK_SECRET) {
+                return res.status(400).send("Missing webhook signature or secret");
+            }
+
+            const expectedSignature = crypto
+                .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+                .update(req.rawBody)
+                .digest("hex");
+
+            const received = Buffer.from(signature, "utf8");
+            const expected = Buffer.from(expectedSignature, "utf8");
+
+            if (
+                received.length !== expected.length ||
+                !crypto.timingSafeEqual(received, expected)
+            ) {
+                return res.status(400).send("Invalid webhook signature");
+            }
+
+            // Signature verified. Do not grant Pro access yet.
+            // We will add verified subscription/payment handling next.
+            return res.status(200).send("Webhook signature verified");
+        } catch (error) {
+            console.error("Razorpay webhook error:", error.message);
+            return res.status(500).send("Webhook processing failed");
+        }
+    }
+);
 async function getLatestNews(query = "India") {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=hi&gl=IN&ceid=IN:hi`;
 

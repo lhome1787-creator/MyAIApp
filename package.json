@@ -17,6 +17,7 @@
     "express": "^5.2.1",
     "openai": "^7.14.0",
     "pdf-parse": "^2.4.5",
+    "razorpay": "^2.9.8",
     "resend": "^6.28.1",
     "rss-parser": "^3.13.0"
   }

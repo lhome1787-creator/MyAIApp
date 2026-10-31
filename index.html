@@ -818,6 +818,7 @@ async function checkLogin() {
     if (session) {
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("loginBox").style.display = "none";
+    document.getElementById("upgradeProBtn").style.display = "block";
 }
 }
 
@@ -825,6 +826,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session) {
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("loginBox").style.display = "none";
+    document.getElementById("upgradeProBtn").style.display = "block";
 }
 });
 
@@ -841,6 +843,64 @@ async function logoutUser() {
 
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("loginBox").style.display = "none";
+}
+</script>
+<button id="upgradeProBtn" style="display:none;position:fixed;top:15px;right:20px;padding:12px 18px;background:#f59e0b;color:#111827;border:none;border-radius:10px;font-weight:bold;cursor:pointer;z-index:9999;" onclick="upgradeToPro()"></button>
+  ⭐ Upgrade to Pro — ₹99/month
+</button>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+async function upgradeToPro() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+        alert("कृपया पहले Login करें।");
+        return;
+    }
+
+    try {
+        const response = await fetch("/create-subscription", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + session.access_token
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.error || "Subscription बनाने में समस्या आई।");
+            return;
+        }
+
+        const options = {
+    key: result.keyId,
+    subscription_id: result.subscriptionId,
+    name: "Vidora AI",
+    description: "Vidora AI Pro - ₹99/month",
+    handler: async function (response) {
+        alert("Payment successful! Verification जारी है।");
+
+        const verifyResponse = await fetch("/verify-subscription-payment", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + session.access_token
+            },
+            body: JSON.stringify(response)
+        });
+
+        const verifyResult = await verifyResponse.json();
+        alert(verifyResult.message || verifyResult.error);
+    }
+};
+
+const razorpayCheckout = new Razorpay(options);
+razorpayCheckout.open();
+    } catch (error) {
+        alert("Server से संपर्क नहीं हो पाया।");
+    }
 }
 </script>
 
