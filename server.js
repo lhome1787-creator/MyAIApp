@@ -123,9 +123,60 @@ app.post(
                 return res.status(400).send("Invalid webhook signature");
             }
 
-            // Signature verified. Do not grant Pro access yet.
-            // We will add verified subscription/payment handling next.
-            return res.status(200).send("Webhook signature verified");
+            // Verify and process Razorpay subscription event
+const event = JSON.parse(req.rawBody.toString("utf8"));
+
+const subscription = event.payload?.subscription?.entity;
+
+if (!subscription) {
+  return res.status(200).send("No subscription data");
+}
+
+const userId = subscription.notes?.supabase_user_id;
+
+if (!userId) {
+  console.error("Supabase user ID missing in subscription notes");
+  return res.status(200).send("User ID missing");
+}
+
+const statusMap = {
+  "subscription.activated": "active",
+  "subscription.charged": "active",
+  "subscription.cancelled": "cancelled",
+  "subscription.halted": "halted",
+  "subscription.completed": "completed"
+};
+
+const newStatus = statusMap[event.event];
+
+if (!newStatus) {
+  return res.status(200).send("Event ignored");
+}
+
+const { error } = await supabaseAdmin
+  .from("vidora_subscriptions")
+  .upsert({
+    user_id: userId,
+    razorpay_subscription_id: subscription.id,
+    plan_name: "Vidora AI Pro",
+    status: newStatus,
+    current_start: subscription.current_start
+      ? new Date(subscription.current_start * 1000).toISOString()
+      : null,
+    current_end: subscription.current_end
+      ? new Date(subscription.current_end * 1000).toISOString()
+      : null,
+    updated_at: new Date().toISOString()
+  }, {
+    onConflict: "razorpay_subscription_id"
+  });
+
+if (error) {
+  console.error("Subscription database error:", error.message);
+  return res.status(500).send("Database update failed");
+}
+
+return res.status(200).send("Subscription updated");
         } catch (error) {
             console.error("Razorpay webhook error:", error.message);
             return res.status(500).send("Webhook processing failed");
